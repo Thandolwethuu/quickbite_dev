@@ -1,102 +1,105 @@
-// import React from "react";
-// import { View, Text, Button, StyleSheet } from "react-native";
-
-// export default function PaymentScreen({ navigation }) {
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>Payment</Text>
-//       <Text style={styles.text}>Proceed to pay for your order.</Text>
-
-//       <Button
-//         title="Complete Payment"
-//         onPress={() => alert("Payment Successful!")}
-//       />
-//       <Button title="Back to Orders" onPress={() => navigation.goBack()} color="gray" />
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-//   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
-//   text: { fontSize: 18, marginBottom: 20 },
-// });
-// import { addDoc, collection, Timestamp } from "firebase/firestore";
-// import { Button, StyleSheet, Text, View } from "react-native";
-// import { db } from "../../firebase";
-
-// export default function PaymentScreen({ route, navigation }) {
-//   const cartItems = route.params?.cartItems || [];
-//   const total = cartItems.reduce((sum, item) => sum + item.price, 0);
-
-//   const handlePayment = async () => {
-//     try {
-//       // Save order to Firestore
-//       await addDoc(collection(db, "orders"), {
-//         items: cartItems,
-//         total,
-//         status: "pending",
-//         createdAt: Timestamp.now(),
-//       });
-
-//       alert("Order placed successfully!");
-//       navigation.navigate("Orders"); // go to Orders screen
-//     } catch (error) {
-//       alert("Error saving order: " + error.message);
-//     }
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>Payment</Text>
-//       <Text>Total: R{total}</Text>
-//       <Button title="Confirm Payment & Place Order" onPress={handlePayment} />
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, padding: 20, justifyContent: "center" },
-//   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
-// });
 import { addDoc, collection, Timestamp } from "firebase/firestore";
-import { Button, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Button, Image, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { db } from "../../firebase";
 
 export default function PaymentScreen({ route, navigation }) {
   const cartItems = route.params?.cartItems || [];
   const total = cartItems.reduce((sum, item) => sum + item.price, 0);
 
+  const [card, setCard] = useState({
+    number: "",
+    name: "",
+    expiry: "",
+    cvc: "",
+  });
+
+  const handleInputChange = (name, value) => setCard({ ...card, [name]: value });
+
   const handlePayment = async () => {
     try {
-      // Save order to Firestore
       const docRef = await addDoc(collection(db, "orders"), {
         items: cartItems,
         total,
         status: "pending",
         createdAt: Timestamp.now(),
       });
-
       alert("Payment successful! Proceed to schedule pickup.");
-
-      // Navigate to TimeScheduler with orderId
       navigation.navigate("TimeScheduler", { orderId: docRef.id });
-
     } catch (error) {
       alert("Error saving order: " + error.message);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Payment</Text>
-      <Text>Total: R{total}</Text>
-      <Button title="Confirm Payment & Place Order" onPress={handlePayment} />
-    </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Enter Card Details</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Card Number (16 digits)"
+        keyboardType="numeric"
+        value={card.number}
+        onChangeText={(text) => handleInputChange("number", text)}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Card Holder Name"
+        value={card.name}
+        onChangeText={(text) => handleInputChange("name", text)}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="MM/YY"
+        value={card.expiry}
+        onChangeText={(text) => handleInputChange("expiry", text)}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="CVC"
+        secureTextEntry
+        keyboardType="numeric"
+        value={card.cvc}
+        onChangeText={(text) => handleInputChange("cvc", text)}
+      />
+
+      {/* Logos */}
+      <View style={styles.logoRow}>
+        <Image style={styles.logo} source={{ uri: "https://img.icons8.com/color/48/000000/visa.png" }} />
+        <Image style={styles.logo} source={{ uri: "https://img.icons8.com/color/48/000000/mastercard.png" }} />
+        <Image style={styles.logo} source={{ uri: "https://img.icons8.com/color/48/000000/paypal.png" }} />
+      </View>
+
+      <Button title={`Pay R${total}`} onPress={handlePayment} />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: "center" },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
+  container: {
+    flexGrow: 1,
+    padding: 20,
+    backgroundColor: "#f8f8f8",
+    alignItems: "center",
+  },
+  title: { fontSize: 18, fontWeight: "bold", marginBottom: 20 },
+  input: {
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    marginBottom: 15,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+  logoRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginBottom: 20,
+  },
+  logo: { width: 50, height: 30, resizeMode: "contain" },
 });
